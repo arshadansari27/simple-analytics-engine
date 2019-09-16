@@ -4,13 +4,12 @@ import abc
 class AnalyticalEventRepository(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def get_new_id(self):
+    def generate_id(self):
         pass
 
     @abc.abstractmethod
-    def get_all_for_project(self, project_id, timestamp):
+    def get_all_for_project(self, project_id, timestamp_from, timestamp_to):
         pass
-
 
     @abc.abstractmethod
     def get_by_id(self, event_id):
@@ -24,7 +23,7 @@ class AnalyticalEventRepository(metaclass=abc.ABCMeta):
 class ProjectRepository(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def get_new_id(self):
+    def generate_id(self):
         pass
 
     @abc.abstractmethod
@@ -32,7 +31,7 @@ class ProjectRepository(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_all(self):
+    def get_all(self, user_id):
         pass
 
     @abc.abstractmethod
