@@ -5,16 +5,15 @@ from datetime import datetime
 from sqlalchemy import create_engine, MetaData, Table, String, Column, Text, DateTime, Boolean, Integer, ForeignKey
 from sqlalchemy import insert, select, update
 
-
-engine = create_engine('sqlite:///main.db')
-metadata = MetaData()
-projects = Table('projects', metadata,
+ENGINE = None
+METADATA = MetaData()
+projects = Table('projects', METADATA,
     Column('id', Integer(), primary_key=True),
     Column('user_id', Integer(), nullable=False),
     Column('name', String(200),  nullable=False),
     Column('description', String(200),  nullable=True),
 )
-analytical_events = Table('analytical_events', metadata,
+analytical_events = Table('analytical_events', METADATA,
     Column('id', Integer(), primary_key=True),
     Column('uri', String(200), nullable=False),
     Column('event_type', String(20),  nullable=False),
@@ -26,7 +25,8 @@ analytical_events = Table('analytical_events', metadata,
 
 @contextmanager
 def transactional():
-    connection = engine.connect()
+    global ENGINE
+    connection = ENGINE.connect()
     try:
         yield connection
     finally:
@@ -34,10 +34,31 @@ def transactional():
         connection = None
 
 
-class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
+META_CREATED = False
+ENGINE_CREATED = False
+
+
+class BaseRepoMixin:
+
+    def __init__(self, db_name):
+        global METADATA, ENGINE, META_CREATED, ENGINE_CREATED
+        if not ENGINE_CREATED:
+            ENGINE = create_engine(f"sqlite:///{db_name}")
+        if not META_CREATED:
+            METADATA.create_all(ENGINE)
+        META_CREATED = True
+        ENGINE_CREATED = True
+
+
+class AnalyticalEventMysqlRepository(AnalyticalEventRepository, BaseRepoMixin):
+
+    def __init__(self, db_name):
+        super(AnalyticalEventMysqlRepository, self).__init__(db_name)
 
     def generate_id(self):
-        raise NotImplementedError
+        with transactional() as connection:
+            data = connection.execute("select max(id) from analytical_events").scalar()
+            raise Exception(f"{data} : {type(data)}")
 
     def get_all_for_project(self, project_id, timestamp_from, timestamp_to):
         with transactional() as connection:
@@ -75,10 +96,17 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
                 description=event_object.description, 
                 project_id=event_object.project_id)
 
-class ProjectMysqlRepository(ProjectRepository):
+class ProjectMysqlRepository(ProjectRepository, BaseRepoMixin):
+
+    def __init__(self, db_name):
+        super(ProjectMysqlRepository, self).__init__(db_name)
 
     def generate_id(self):
-        raise NotImplementedError
+        with transactional() as connection:
+            data = connection.execute("select max(id) from projects").fetchone()[0]
+            if not data:
+                return 1
+            return int(data) + 1
 
     def get_by_id(self, project_id):
         with transactional() as connection:
@@ -117,4 +145,3 @@ class ProjectMysqlRepository(ProjectRepository):
             return None
         return Project(row['user_id'], row['id'], row['name'], row['description'])
 
-metadata.create_all(engine)

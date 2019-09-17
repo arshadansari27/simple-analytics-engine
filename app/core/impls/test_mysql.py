@@ -10,7 +10,7 @@ import os
 @pytest.fixture
 def context():
     RepositoryTuple = namedtuple("RepositoryTuple", ['event_repository', 'project_repository'])
-    return RepositoryTuple(AnalyticalEventMysqlRepository(), ProjectMysqlRepository())
+    return RepositoryTuple(AnalyticalEventMysqlRepository('test.db'), ProjectMysqlRepository('test.db'))
 
 
 def test_sql(context):
@@ -50,4 +50,4 @@ def test_sql(context):
     assert event.event_type == 'event_type_2' and event.project_id == 3
     events = event_repository.get_all_for_project(3, None, None)
     assert len([u for u in events]) == 2
-    os.remove('main.db')
+    os.remove('test.db')
