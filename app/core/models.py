@@ -11,6 +11,14 @@ class AnalyticalEvent:
     def __repr__(self):
         return f"{self.id}: {self.event_type} @ {self.timestamp}"
 
+    def __eq__(self, other):
+        if not isinstance(other, AnalyticalEvent):
+            return False
+        for key in {'id', 'timestamp', 'event_type', 'uri', 'description', 'project_id'}:
+            if getattr(self, key, None) != getattr(other, key, False):
+                return False
+        return True
+
 
 class Project:
 
@@ -23,4 +31,13 @@ class Project:
 
     def __repr__(self):
         return f"{self.id}: {self.name}"
+
+    def __eq__(self, other):
+        if not isinstance(other, Project):
+            return False
+        for key in {'id', 'user_id', 'name', 'description'}:
+            if getattr(self, key, None) != getattr(other, key, False):
+                return False
+        return True
+
 
