@@ -24,6 +24,10 @@ class AuthorisationRepository(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def get_by_user_id(self, user_id):
+        pass
+
+    @abc.abstractmethod
     def add(self, authorisation):
         pass
 

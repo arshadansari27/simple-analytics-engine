@@ -102,6 +102,11 @@ class AuthorisationSQLRepository(AuthorisationRepository):
         self.__class__._create_table_schema(metadata)
         self.engine = engine
 
+    def get_by_user_id(self, user_id):
+        with transactional(self.engine) as connection:
+            dd = select([self.__class__.auth]).where(self.__class__.auth.c.user_id==user_id)
+            return self._to_object(connection.execute(dd).first())
+
     def get_by_user_name(self, user_name):
         with transactional(self.engine) as connection:
             dd = select([self.__class__.auth]).where(self.__class__.auth.c.user_name==user_name)
