@@ -1,4 +1,5 @@
-from .mysql import AnalyticalEventMysqlRepository, ProjectMysqlRepository
+from sqlalchemy import create_engine, MetaData 
+from .sql import AnalyticalEventMysqlRepository, ProjectMysqlRepository
 from ..models import AnalyticalEvent, Project
 from collections import namedtuple
 from datetime import datetime
@@ -9,8 +10,16 @@ import os
 
 @pytest.fixture
 def context():
-    RepositoryTuple = namedtuple("RepositoryTuple", ['event_repository', 'project_repository'])
-    return RepositoryTuple(AnalyticalEventMysqlRepository('test.db'), ProjectMysqlRepository('test.db'))
+    try:
+        os.remove('event_test.db')
+    except FileNotFoundError:
+        pass
+    metadata = MetaData()
+    engine = create_engine(f"sqlite:///event_test.db")
+    EventRepositoryTuple = namedtuple("EventRepositoryTuple", ['event_repository', 'project_repository'])
+    ctx = EventRepositoryTuple(AnalyticalEventMysqlRepository(metadata, engine), ProjectMysqlRepository(metadata, engine))
+    metadata.create_all(engine)
+    return ctx
 
 
 def test_sql(context):
@@ -50,4 +59,4 @@ def test_sql(context):
     assert event.event_type == 'event_type_2' and event.project_id == 3
     events = event_repository.get_all_for_project(3, None, None)
     assert len([u for u in events]) == 2
-    os.remove('test.db')
+    os.remove('event_test.db')

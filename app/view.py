@@ -1,10 +1,11 @@
 from flask import Flask, request
-from .ioc_config import event_service_prototype
+from .ioc_config import create_context
 from .auth.models import User
 
 
 app = Flask(__name__)
-event_service = event_service_prototype(lambda u: User(u, 'test-name', 'test-email', 'test-phone'))
+context = create_context('main.db', lambda u: User(u, 'test-name', 'test-email', 'test-phone'))
+event_service = context.event_service
 
 
 @app.route('/add-project', methods=['POST'])

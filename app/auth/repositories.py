@@ -1,7 +1,7 @@
 import abc
 
 
-class UserRepository(abc.ABCMeta):
+class UserRepository(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_by_id(self, user_id):
@@ -11,8 +11,13 @@ class UserRepository(abc.ABCMeta):
     def add(self, user):
         pass
 
+    @abc.abstractmethod
+    def update(self, user):
+        pass
 
-class AuthorisationRepository(abc.ABCMeta):
+
+
+class AuthorisationRepository(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_by_user_name(self, user_name):
@@ -20,4 +25,8 @@ class AuthorisationRepository(abc.ABCMeta):
 
     @abc.abstractmethod
     def add(self, authorisation):
+        pass
+
+    @abc.abstractmethod
+    def update(self, authorisation):
         pass
