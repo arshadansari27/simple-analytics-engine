@@ -89,7 +89,7 @@ class AuthorisationSQLRepository(AuthorisationRepository):
     def _create_table_schema(cls, metadata):
         if cls.auth is not None:
             return
-        if not UserSQLRepository.users:
+        if UserSQLRepository.users is None:
             UserSQLRepository._create_table_schema(metadata)
         cls.auth = Table('auth', metadata,
             Column('user_id', Integer(), ForeignKey(UserSQLRepository.users.c.id)),

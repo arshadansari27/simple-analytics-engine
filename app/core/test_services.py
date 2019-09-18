@@ -67,7 +67,7 @@ class InMemoryProjectRepository(ProjectRepository):
 
 
 @pytest.fixture()
-def context():
+def context_core():
     event_repository = InMemoryAnalyticalEventRepository(copy.copy(ANALYTICAL_EVENTS))
     project_repository=  InMemoryProjectRepository(copy.copy(PROJECTS))
     class User:
@@ -76,7 +76,7 @@ def context():
 
     user_getter = lambda user_id: User(user_id)
     event_service = EventService(user_getter, project_repository, event_repository)
-    _context = {
+    _context_core = {
         'uri': 'tset/uri',
         'project_id': 32,
         'project_name': 'test_project',
@@ -85,33 +85,33 @@ def context():
         'timestamp': datetime.now(pytz.UTC),
         'event_service': event_service
     }
-    return _context
+    return _context_core
 
 
-def test_add_event(context):
-    event_service = context['event_service']
-    uri, event_type, timestamp = context['uri'], context['event_type'], context['timestamp']
+def test_add_event(context_core):
+    event_service = context_core['event_service']
+    uri, event_type, timestamp = context_core['uri'], context_core['event_type'], context_core['timestamp']
     project_id = 2
     event_id = event_service.add_event(1, project_id, timestamp, event_type, uri, 'test description')
     assert event_service.event_repository.get_by_id(event_id) is not None
 
 
-def test_add_project(context):
-    event_service = context['event_service']
-    project_name, project_description = context['project_name'], context['project_description']
+def test_add_project(context_core):
+    event_service = context_core['event_service']
+    project_name, project_description = context_core['project_name'], context_core['project_description']
     project_id = event_service.add_project(1, project_name, project_description)
     assert project_id is not None and project_id > 0
 
 
-def test_get_events(context):
-    event_service = context['event_service']
+def test_get_events(context_core):
+    event_service = context_core['event_service']
     project_id = 1
-    timestamp = context['timestamp']
+    timestamp = context_core['timestamp']
     print(event_service.get_all_events(project_id, timestamp - timedelta(days=1), timestamp + timedelta(days=1)))
 
 
-def test_get_projects(context):
-    event_service = context['event_service']
+def test_get_projects(context_core):
+    event_service = context_core['event_service']
     assert len(event_service.get_all_projects(1)) == 2
 
 

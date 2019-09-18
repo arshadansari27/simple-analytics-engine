@@ -64,56 +64,53 @@ class InMemoryUserRepository(UserRepository):
 
 
 @pytest.fixture()
-def auth_service():
+def context_auth():
     user_repository = InMemoryUserRepository(copy.copy(USERS))
     auth_repository =  InMemoryAuthorisationRepository(copy.copy(AUTHS))
-    _auth_service = AuthService(user_repository, auth_repository)
-    return _auth_service
+    _context_auth = AuthService(user_repository, auth_repository)
+    return _context_auth
 
 
-def test_add_user(auth_service):
-    user = auth_service.add('test name', 'test@email', '+testphone', 'username', 'password', ['what', 'ever'])
+def test_add_user(context_auth):
+    user = context_auth.add('test name', 'test@email', '+testphone', 'username', 'password', ['what', 'ever'])
     assert user.name == 'test name'
 
-def test_get_user(auth_service):
-    user = auth_service.get(1)
+def test_get_user(context_auth):
+    user = context_auth.get(1)
     assert user.name == 'test user 1'
 
-def test_authenticate(auth_service):
-    user = auth_service.authenticate('test_user_name_1', 'test_password')
+def test_authenticate(context_auth):
+    user = context_auth.authenticate('test_user_name_1', 'test_password')
     assert user.id == 1
     try:
-        user = auth_service.authenticate('test_user_name_2', 'test_password2')
+        user = context_auth.authenticate('test_user_name_2', 'test_password2')
         raise Exception("This should fail")
     except AuthenticationFailedError:
         pass
 
-def test_change_password(auth_service):
+def test_change_password(context_auth):
     old_password = 'test_password'
     new_password = 'new_password'
     user_id = 1
-    user = auth_service.change_password(user_id, old_password, new_password)
+    user = context_auth.change_password(user_id, old_password, new_password)
     assert user is not None
-    try:
-        user = auth_service.change_password(user_id, old_password, new_password)
-        raise Exception("This should fail")
-    except AuthenticationFailedError:
-        pass
+    with pytest.raises(AuthenticationFailedError) as e_info:
+        context_auth.change_password(user_id, old_password, new_password)
 
-def test_add_role(auth_service):
+def test_add_role(context_auth):
     user_id = 2 
-    user = auth_service.add_role(user_id, 'new role')
+    user = context_auth.add_role(user_id, 'new role')
     assert user.roles is not None and 'new role' in user.roles
 
-def test_remove_role(auth_service):
+def test_remove_role(context_auth):
     user_id = 2
-    user = auth_service.remove_role(user_id, 'role 1')
+    user = context_auth.remove_role(user_id, 'role 1')
     assert user.roles is not None and 'role 1' not in user.roles
 
 
 AUTHS = [
-    Authorisation(1, 'test_user_name_1', 'test_password', ['role 1', 'role2']),
-    Authorisation(2, 'test_user_name_2', 'test_password', ['role 1', 'role2']),
+    Authorisation(1, 'test_user_name_1', '16ec1ebb01fe02ded9b7d5447d3dfc65', ['role 1', 'role2']),
+    Authorisation(2, 'test_user_name_2', '16ec1ebb01fe02ded9b7d5447d3dfc65', ['role 1', 'role2']),
 ]
 
 USERS = [

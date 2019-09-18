@@ -16,7 +16,7 @@ class AuthService:
         user_id = self.user_repository.generate_id()
         user = User(user_id, name, email, phone)
         self.user_repository.add(user)
-        _password = hashlib.md5(password.encode('utf-8')).digest()
+        _password = hashlib.md5(password.encode('utf-8')).hexdigest()
         auth = Authorisation(user.id, user_name, _password, roles)
         self.auth_repository.add(auth)
         user = self._get_hydrated_user_by_id(user_id)
@@ -26,18 +26,18 @@ class AuthService:
         return self._get_hydrated_user_by_id(user_id)
 
     def authenticate(self, user_name, password):
-        _password = hashlib.md5(password.encode('utf-8')).digest()
+        _password = hashlib.md5(password.encode('utf-8')).hexdigest()
         auth = self.auth_repository.get_by_user_name(user_name)
-        if hashlib.md5(auth.password.encode('utf-8')).digest() != _password:
+        if auth.password != _password:
             raise AuthenticationFailedError(user_name)
         return self._get_hydrated_user_by_id(auth.user_id)        
 
     def change_password(self, user_id, old_password, new_password):
         user = self._get_hydrated_user_by_id(user_id)        
-        _old_password = hashlib.md5(old_password.encode('utf-8')).digest()
-        if user.auth.password != old_password:
+        _old_password = hashlib.md5(old_password.encode('utf-8')).hexdigest()
+        if user.auth.password != _old_password:
             raise AuthenticationFailedError(user.user_name)
-        _new_password = hashlib.md5(new_password.encode('utf-8')).digest()
+        _new_password = hashlib.md5(new_password.encode('utf-8')).hexdigest()
         user.auth.password = _new_password
         self.auth_repository.update(user.auth)
         return user
@@ -86,4 +86,5 @@ class AuthenticationFailedError(Exception):
 
     def __init__(self, user_name):
         super(Exception, self).__init__(f"Authentication for {user_name} failed")
+        self.authentication_error = True
 

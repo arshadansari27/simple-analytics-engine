@@ -32,7 +32,7 @@ class EventService:
         self.project_repository.upsert(project)
         return project.id
 
-    def update_project_description(self, project_id, project_description):
+    def update_project_description(self, user_id, project_id, project_description):
         user = self.user_getter(user_id)
         # TODO: Check user roles to see if user can update project
         project = self.project_repository.get_by_id(project_id)

@@ -22,7 +22,7 @@ class ProjectMysqlRepository(ProjectRepository):
 
     @classmethod
     def _create_table_schema(cls, metadata):
-        if cls.projects:
+        if cls.projects is not None:
             return
         cls.projects = Table('projects', metadata,
             Column('id', Integer(), primary_key=True),
@@ -84,9 +84,9 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
 
     @classmethod
     def _create_table_schema(cls, metadata):
-        if cls.analytical_events:
+        if cls.analytical_events is not None:
             return
-        if not ProjectMysqlRepository.projects:
+        if ProjectMysqlRepository.projects is None:
             ProjectMysqlRepository._create_table_schema(metadata)
         cls.analytical_events = Table('analytical_events', metadata,
             Column('id', Integer(), primary_key=True),

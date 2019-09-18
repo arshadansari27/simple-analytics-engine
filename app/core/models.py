@@ -1,3 +1,6 @@
+import json
+
+
 class AnalyticalEvent:
 
     def __init__(self, event_id, timestamp, event_type, uri, description, project_id):
@@ -19,6 +22,16 @@ class AnalyticalEvent:
                 return False
         return True
 
+    def to_json(self):
+        return {
+            'id': self.id, 
+            'uri': self.uri, 
+            'event_type': self.event_type, 
+            'project_id': self.project_id, 
+            'description': self.description,
+            'timestamp': str(self.timestamp)
+        }
+
 
 class Project:
 
@@ -39,5 +52,8 @@ class Project:
             if getattr(self, key, None) != getattr(other, key, False):
                 return False
         return True
+
+    def to_json(self):
+        return {'user_id': self.user_id, 'id': self.id, 'name': self.name, 'description': self.description}
 
 
