@@ -1,9 +1,10 @@
 from dateutil import parser
+from datetime import datetime
 from flask import Flask, request, jsonify
 from .ioc_config import create_context
 from .auth.models import User
 from functools import wraps
-import uuid, traceback
+import uuid, traceback, pytz
 
 
 app = Flask(__name__)
@@ -137,3 +138,24 @@ def add_event():
     timestamp = parser.parse(request.json['timestamp'])
     event_id = event_service.add_event(user_id, project_id, timestamp, event_type, uri, description)
     return {'message': "successfully added event", 'event_id': event_id}
+
+
+@app.route('/event-stats/<project_id>', methods=['GET'])
+@login_required
+def event_stats(project_id):
+    token = request.args['token']
+    timestamp_from, timestamp_to = None, None
+    if request.json['from']:
+        timetamp_from = parser.parse(request.json['from']).replace(tzinfo=pytz.UTC)
+    else:
+        timestamp_from = datetime(1970, 1, 1, hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC)
+    if request.json['to']:
+        timetamp_to = parser.parse(request.json['to']).replace(tzinfo=pytz.UTC)
+    else:
+        timestamp_to = datetime.now(tz=pytz.UTC)
+    user_id = TOKENS[token]
+
+    period = request.json['period']
+    stats, project = event_service.get_project_stats(period, user_id, project_id, timestamp_from, timestamp_to)
+    response = {'stats': stats, 'project': project.to_json()}
+    return response

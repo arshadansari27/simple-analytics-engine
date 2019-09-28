@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, MetaData 
 from .core.services import EventService
 from .auth.services import AuthService
-from .core.impls.sql import AnalyticalEventMysqlRepository, ProjectMysqlRepository
+from .core.impls.sql import AnalyticalEventMysqlRepository, ProjectMysqlRepository, EventStatsMysqlRepository
 from .auth.impls.sql import AuthorisationSQLRepository, UserSQLRepository
 from collections import namedtuple
 
@@ -20,7 +20,8 @@ def create_context(db_name):
     user_getter = user_repository.get_by_id
     project_repository = ProjectMysqlRepository(metadata, engine)
     analytical_repository = AnalyticalEventMysqlRepository(metadata, engine)
-    event_service = EventService(user_getter, project_repository, analytical_repository)
+    stats_repository = EventStatsMysqlRepository(project_repository, analytical_repository)
+    event_service = EventService(user_getter, project_repository, analytical_repository, stats_repository)
     
     metadata.create_all(engine)
     return Context(event_service, auth_service)

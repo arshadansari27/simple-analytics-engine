@@ -12,6 +12,7 @@ def divide_data_in_intervals(events, period):
     """
     Divide the given events into intervals
     """
+    events = list(events)
     max_event_timestamp = max([e.timestamp for e in events])
     min_event_timestamp = min([e.timestamp for e in events])
     intervals_dict = OrderedDict()
@@ -26,7 +27,9 @@ def divide_data_in_intervals(events, period):
         intervals_dict[formatted_date]['total'] += 1
         intervals_dict[formatted_date]['project'][event.project_id] += 1
         intervals_dict[formatted_date]['uri'][event.uri] += 1
-    return intervals_dict
+    #NOTE: This additional check is to reduce data size for demonstration purposes
+    _intervals_dict = {u: dd for u, dd in intervals_dict.items() if dd['total'] > 0}
+    return _intervals_dict
 
 
 def less_than_month_intervals(timestamp_from, timestamp_to, diff, date_formatter):

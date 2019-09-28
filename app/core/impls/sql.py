@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
                         Table, Text, insert, select, update)
 
+import dateutil
 from ..models import AnalyticalEvent, Project
 from ..repositories import (AnalyticalEventRepository, EventStatsRepository,
                             ProjectRepository)
@@ -123,9 +124,9 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
         with transactional(self.engine) as connection:
             dd = select([self.__class__.analytical_events]).where(self.__class__.analytical_events.c.project_id==project_id)
             if timestamp_from:
-                dd = dd.where(self.__class__.analytical_events.c.timestamp <= timestamp_to)
+                dd = dd.where(self.__class__.analytical_events.c.timestamp.bool_op('<=')(timestamp_to))
             if timestamp_to:
-                dd = dd.where(self.__class__.analytical_events.c.timestamp >= timestamp_from)
+                dd = dd.where(self.__class__.analytical_events.c.timestamp.bool_op('>=')(timestamp_from))
             rows = connection.execute(dd).fetchall()
             return (self._to_object(row) for row in rows)
 
@@ -144,7 +145,10 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
     def _to_object(self, row):
         if not row:
             return None
-        return AnalyticalEvent(row['id'], row['timestamp'], row['event_type'], row['uri'], row['description'], row['project_id'])
+        ts = row['timestamp']
+        if isinstance(ts, str):
+            ts = dateutil.parser.parse(ts)
+        return AnalyticalEvent(row['id'], ts, row['event_type'], row['uri'], row['description'], row['project_id'])
 
     def _from_object(self, event_object):
         return dict(
