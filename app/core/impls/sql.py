@@ -1,13 +1,20 @@
-from ..repositories import AnalyticalEventRepository, ProjectRepository
-from ..models import AnalyticalEvent, Project
+"""SQL Repository"""
+
 from contextlib import contextmanager
 from datetime import datetime
-from sqlalchemy import Table, String, Column, Text, DateTime, Boolean, Integer, ForeignKey
-from sqlalchemy import insert, select, update
+from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
+                        Table, Text, insert, select, update)
 
+from ..models import AnalyticalEvent, Project
+from ..repositories import (AnalyticalEventRepository, EventStatsRepository,
+                            ProjectRepository)
+from ..helper import divide_data_in_intervals
 
 @contextmanager
 def transactional(engine):
+    """
+    Transactional Context
+    """
     connection = engine.connect()
     try:
         yield connection
@@ -17,11 +24,17 @@ def transactional(engine):
 
 
 class ProjectMysqlRepository(ProjectRepository):
+    """
+    Project Respository for Mysql
+    """
 
     projects = None 
 
     @classmethod
-    def _create_table_schema(cls, metadata):
+    def create_table_schema(cls, metadata):
+        '''
+        Create table schema
+        '''
         if cls.projects is not None:
             return
         cls.projects = Table('projects', metadata,
@@ -83,11 +96,11 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
     analytical_events = None
 
     @classmethod
-    def _create_table_schema(cls, metadata):
+    def create_table_schema(cls, metadata):
         if cls.analytical_events is not None:
             return
         if ProjectMysqlRepository.projects is None:
-            ProjectMysqlRepository._create_table_schema(metadata)
+            ProjectMysqlRepository.create_table_schema(metadata)
         cls.analytical_events = Table('analytical_events', metadata,
             Column('id', Integer(), primary_key=True),
             Column('uri', String(200), nullable=False),
@@ -98,7 +111,7 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
         )
 
     def __init__(self, metadata, engine):
-        self.__class__._create_table_schema(metadata)
+        self.__class__.create_table_schema(metadata)
         self.engine = engine
 
     def generate_id(self):
@@ -143,3 +156,34 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
                 project_id=event_object.project_id)
 
 
+class EventStatsMysqlRepository(EventStatsRepository):
+
+    PERIODS = {'hourly', 'daily', 'weekly', 'monthly', 'yearly'}
+
+    def __init__(self, project_repository: ProjectRepository, event_repository: AnalyticalEventRepository):
+        self.project_repository = project_repository
+        self.event_repository = event_repository
+
+    def get_all_stats(self, user_id, period, timestamp_from, timestamp_to):
+        projects = self.project_repository.get_all(user_id)
+        events = []
+        for project in projects:
+            _events = self.event_repository.get_all_for_project(project.id, timestamp_from, timestamp_to)
+            if not _events:
+                continue
+            events.extend(_events)
+        return self._convert_to_stats(events, period)
+
+    def get_project_stats(self, project_id, period, timestamp_from, timestamp_to):
+        events = self.event_repository.get_all_for_project(project_id, timestamp_from, timestamp_to)
+        return self._convert_to_stats(events, period)
+
+
+    def _check_period(self, period):
+        if period not in EventStatsMysqlRepository.PERIODS:
+            raise Exception(
+                f"Invalid period = {period}, allowed = {EventStatsMysqlRepository.PERIODS}"
+            )
+
+    def _convert_to_stats(self, events, period):
+        return divide_data_in_intervals(events, period)

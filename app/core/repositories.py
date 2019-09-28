@@ -1,41 +1,76 @@
+"""
+Repository Interfaces
+"""
+
+
 import abc
 
 
 class AnalyticalEventRepository(metaclass=abc.ABCMeta):
+    """ Analytical Event Repository Interface """
 
     @abc.abstractmethod
     def generate_id(self):
-        pass
+        ''' Generate Id '''
 
     @abc.abstractmethod
     def get_all_for_project(self, project_id, timestamp_from, timestamp_to):
-        pass
+        """
+        Get all for project by id
+        """
 
     @abc.abstractmethod
     def get_by_id(self, event_id):
-        pass
+        """
+        Get event by id
+        """
 
     @abc.abstractmethod
     def add(self, event):
-        pass
+        """
+        Add event
+        """
 
 
 class ProjectRepository(metaclass=abc.ABCMeta):
+    """ Project Repository Interface """
 
     @abc.abstractmethod
     def generate_id(self):
-        pass
+        """
+        Generate Id
+        """
 
     @abc.abstractmethod
     def get_by_id(self, project_id):
-        pass
+        """
+        Get by id
+        """
 
     @abc.abstractmethod
     def get_all(self, user_id):
-        pass
+        """
+        Get all
+        """
 
     @abc.abstractmethod
     def upsert(self, project):
-        pass
+        """
+        Upsert project
+        """
 
 
+class EventStatsRepository(metaclass=abc.ABCMeta):
+    """ Analytical Event Repository Interface """
+
+    @abc.abstractmethod
+    def get_all_stats(self, user_id, period, timestamp_from, timestamp_to):
+        """
+        Get all stats: period = hourly, daily, weekly, monthly, yearly
+        """
+
+    @abc.abstractmethod
+    def get_project_stats(self, project_id, period, timestamp_from, timestamp_to):
+        """ 
+        Get project stats: period = hourly, daily, weekly, monthly, yearly
+        """
