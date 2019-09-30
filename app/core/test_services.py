@@ -2,9 +2,10 @@ import pytest
 import copy
 from datetime import datetime, timedelta
 
-from .services import EventService
+from .services import EventService, StatService
 from .models import AnalyticalEvent, Project, EventStats
 from .repositories import AnalyticalEventRepository, ProjectRepository, EventStatsRepository
+from .helper import generate_interval
 from datetime import datetime
 import pytz
 
@@ -70,10 +71,11 @@ class InMemoryEventStatsRepository(EventStatsRepository):
         self.stats = stats
 
     def upsert_event_stat(self, event_stat):
-        existing_event_stat = next((u for u in self.stats if u.user_id == event_stat.user_id and u.period == event_stat.period and u.interval == event_stat.interval and u.project_id == event_stat.project_id))
+        existing_event_stat = self.get_project_stats(event_stat.project_id, event_stat.period, event_stat.interval)
         if not existing_event_stat:
             self.stats.append(event_stat)
         else:
+            self.stats.append(event_stat)
             existing_event_stat.count_total = event_stat.count_total
             existing_event_stat.count_event_types = event_stat.count_event_types
             existing_event_stat.count_uris = event_stat.count_uris
@@ -82,8 +84,10 @@ class InMemoryEventStatsRepository(EventStatsRepository):
         return [u for u in self.stats if u.user_id == user_id and u.period == period and u.interval == interval]
 
     def get_project_stats(self, project_id, period, interval):
-        return next((u for u in self.stats if u.period == period and u.interval == interval and u.project_id == project_id))
-
+        try:
+            return next((u for u in self.stats if u.period == period and u.interval == interval and u.project_id == project_id))
+        except StopIteration:
+            return None
 
 @pytest.fixture()
 def context_core():
@@ -135,12 +139,12 @@ def test_get_projects(context_core):
 
 
 ANALYTICAL_EVENTS = [
-    AnalyticalEvent(1, datetime.now(pytz.UTC), 'TYPE 1', '/test-uri-1', 'test descripton', 1),
-    AnalyticalEvent(2, datetime.now(pytz.UTC), 'TYPE 2', '/test-uri-1', 'test descripton', 1),
-    AnalyticalEvent(3, datetime.now(pytz.UTC), 'TYPE 3', '/test-uri-2', 'test descripton', 1),
-    AnalyticalEvent(4, datetime.now(pytz.UTC), 'TYPE 1', '/test-uri-1', 'test descripton', 2),
-    AnalyticalEvent(5, datetime.now(pytz.UTC), 'TYPE 2', '/test-uri-1', 'test descripton', 2),
-    AnalyticalEvent(6, datetime.now(pytz.UTC), 'TYPE 2', '/test-uri-2', 'test descripton', 2),
+    AnalyticalEvent(1, datetime(2018, 12, 1, 8, 22, 33, tzinfo=pytz.UTC), 'TYPE 1', '/test-uri-1', 'test descripton', 1),
+    AnalyticalEvent(2, datetime(2019, 1, 1, 4, 22, 33, tzinfo=pytz.UTC), 'TYPE 2', '/test-uri-1', 'test descripton', 1),
+    AnalyticalEvent(3, datetime(2019, 2, 1, 3, 22, 33, tzinfo=pytz.UTC), 'TYPE 3', '/test-uri-2', 'test descripton', 1),
+    AnalyticalEvent(4, datetime(2019, 3, 1, 13, 22, 33, tzinfo=pytz.UTC), 'TYPE 1', '/test-uri-1', 'test descripton', 2),
+    AnalyticalEvent(5, datetime(2019, 3, 15, 1, 22, 33, tzinfo=pytz.UTC), 'TYPE 2', '/test-uri-1', 'test descripton', 2),
+    AnalyticalEvent(6, datetime(2019, 3, 16, 11, 22, 33, tzinfo=pytz.UTC), 'TYPE 2', '/test-uri-2', 'test descripton', 2),
 ]
 PROJECTS = [
         Project(1, 1, 'test project 1', 'this is a test project to be used by fixtures'),
@@ -148,3 +152,34 @@ PROJECTS = [
 ]
 
 
+@pytest.fixture()
+def stat_context_core():
+    event_repository = InMemoryAnalyticalEventRepository(copy.copy(ANALYTICAL_EVENTS))
+    project_repository=  InMemoryProjectRepository(copy.copy(PROJECTS))
+    class User:
+        def __init__(self, user_id):
+            self.id = user_id
+
+    user_getter = lambda user_id: User(user_id)
+    stats_repository = InMemoryEventStatsRepository([])
+    event_service = EventService(user_getter, project_repository, event_repository)
+    stat_service = StatService(user_getter, project_repository, stats_repository)
+    _context_core = {
+        'event_service': event_service,
+        'stat_service': stat_service
+    }
+    return _context_core
+
+
+def test_stats(stat_context_core):
+    stat_servive = stat_context_core['stat_service']
+    for event in ANALYTICAL_EVENTS:
+        stat_servive.add_event_stat(1, 1, event) 
+    stats, project = stat_servive.get_project_stats(
+        'monthly', 1, 1, datetime(2019, 1, 1, tzinfo=pytz.UTC), datetime(2019, 4, 1, tzinfo=pytz.UTC))
+    for stat in stats:
+        if stat.interval != datetime(2019, 3, 1, tzinfo=pytz.UTC):
+            continue
+        assert stat.count_total is 3
+        assert len(stat.count_event_types) is 2
+        assert len(stat.count_uris) is 2

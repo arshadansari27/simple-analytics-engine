@@ -4,8 +4,8 @@ import app.ioc_config as ioc_config
 from collections import namedtuple
 
 # Monkey Patching
-ServiceTuple = namedtuple('ServiceTuple', ['event_service', 'auth_service'])
-ioc_config.create_context = lambda u: ServiceTuple(MagicMock(), MagicMock())
+ServiceTuple = namedtuple('ServiceTuple', ['event_service', 'auth_service', 'stat_service'])
+ioc_config.create_context = lambda u: ServiceTuple(MagicMock(), MagicMock(), MagicMock())
 
 
 import app.view as view

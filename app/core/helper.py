@@ -2,10 +2,7 @@
 HELPER module to get intervals
 """
 
-from functools import partial
-from datetime import timedelta, datetime
-from collections import OrderedDict, defaultdict
-import calendar
+from datetime import timedelta
 
 def generate_interval(period, timestamp):
     if period == 'hourly':
@@ -42,6 +39,6 @@ def generate_interval_range(period, timestamp_from, timestamp_to):
         diff = timedelta(days=365)
     timestamp = timestamp_from
     while timestamp < timestamp_to:
-        timestamps.append(timestamp)
+        timestamps.append(generate_interval(period, timestamp))
         timestamp += diff
     return timestamps

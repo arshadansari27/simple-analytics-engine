@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 
 class AnalyticalEvent:
@@ -70,9 +71,9 @@ class EventStats:
         self.period = period
         self.interval = interval
         self.project_id = project_id
-        self.count_event_types = count_event_types
-        self.count_uris = count_uris
-        self.count_total = count_total
+        self.count_event_types = count_event_types or defaultdict(int)
+        self.count_uris = count_uris or defaultdict(int)
+        self.count_total = count_total or 0
 
     def to_json(self):
         return {

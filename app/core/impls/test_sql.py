@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, MetaData 
-from .sql import AnalyticalEventMysqlRepository, ProjectMysqlRepository, EventStatsMysqlRepository
+from .sql import AnalyticalEventMysqlRepository, ProjectMysqlRepository
 from ..models import AnalyticalEvent, Project
 from collections import namedtuple
 from datetime import datetime
@@ -28,7 +28,6 @@ def context():
 def test_sql(context):
     event_repository = context.event_repository
     project_repository = context.project_repository
-    stats_repository = context.event_stats_repository
     projects = []
     events = []
     projects.append(Project(1, 1, "test project 1", "test description 1"))

@@ -9,7 +9,7 @@ import uuid, traceback, pytz
 
 app = Flask(__name__)
 context = create_context('main.db')
-event_service, auth_service = context.event_service, context.auth_service
+event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stat_service
 TOKENS = {}
 
 
@@ -156,6 +156,6 @@ def event_stats(project_id):
     user_id = TOKENS[token]
 
     period = request.json['period']
-    stats, project = event_service.get_project_stats(period, user_id, project_id, timestamp_from, timestamp_to)
+    stats, project = stat_service.get_project_stats(period, user_id, project_id, timestamp_from, timestamp_to)
     response = {'stats': stats, 'project': project.to_json()}
     return response

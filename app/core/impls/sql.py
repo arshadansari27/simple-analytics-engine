@@ -9,7 +9,7 @@ import dateutil
 from ..models import AnalyticalEvent, Project
 from ..repositories import (AnalyticalEventRepository, EventStatsRepository,
                             ProjectRepository)
-from ..helper import divide_data_in_intervals
+
 
 @contextmanager
 def transactional(engine):
