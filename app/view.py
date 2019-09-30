@@ -1,6 +1,8 @@
 from dateutil import parser
 from datetime import datetime
 from flask import Flask, request, jsonify
+from celery import Celery
+
 from .ioc_config import create_context
 from .auth.models import User
 from functools import wraps
@@ -8,8 +10,17 @@ import uuid, traceback, pytz
 
 
 app = Flask(__name__)
+
+#TODO: Move these values to configuration.py file
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 context = create_context('main.db')
-event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stat_service
+
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+from app.daemons import update_event
+
+event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stats_service
 TOKENS = {}
 
 
@@ -125,9 +136,10 @@ def events(project_id):
     return response
 
 
-@app.route('/events/add', methods=['POST'])
+@app.route('/event/add', methods=['POST'])
 @login_required
 def add_event():
+    from .daemons import update_event
     global TOKENS
     token = request.args['token']
     user_id = TOKENS[token]
@@ -137,7 +149,20 @@ def add_event():
     description = request.json['description']
     timestamp = parser.parse(request.json['timestamp'])
     event_id = event_service.add_event(user_id, project_id, timestamp, event_type, uri, description)
+    update_event.delay(user_id, project_id, event_id)
     return {'message': "successfully added event", 'event_id': event_id}
+
+
+@app.route('/event/send', methods=['POST'])
+#@login_required
+def send_event():
+    global TOKENS
+    token = request.args['token']
+    user_id = 1 or TOKENS[token]
+    project_id = request.json['project_id']
+    event_id = request.json['event_id']
+    update_event.delay(user_id, project_id, event_id)
+    return {'message': "successfully send event for updates", 'event_id': event_id}
 
 
 @app.route('/event-stats/<project_id>', methods=['GET'])

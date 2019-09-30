@@ -64,6 +64,7 @@ class EventService:
         event_id = self.event_repository.generate_id()
         event = AnalyticalEvent(event_id, timestamp, event_type, uri, description, project.id) 
         self.event_repository.add(event)
+        print(event.to_json())
         return event.id
 
     def get_event(self, event_id):

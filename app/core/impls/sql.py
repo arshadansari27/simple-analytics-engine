@@ -117,8 +117,10 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
 
     def generate_id(self):
         with transactional(self.engine) as connection:
-            data = connection.execute("select max(id) from analytical_events").scalar()
-            raise Exception(f"{data} : {type(data)}")
+            value = connection.execute("select max(id) from analytical_events").scalar()
+            if not value:
+                return 1
+            return int(value) + 1
 
     def get_all_for_project(self, project_id, timestamp_from, timestamp_to):
         with transactional(self.engine) as connection:
