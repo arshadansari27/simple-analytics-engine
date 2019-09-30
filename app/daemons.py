@@ -1,8 +1,6 @@
-from app.view import celery
-from .ioc_config import create_context
+from .ioc_config import celery, context
 
 
-context = create_context('main.db')
 event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stats_service
 
 

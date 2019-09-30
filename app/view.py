@@ -3,24 +3,18 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from celery import Celery
 
-from .ioc_config import create_context
 from .auth.models import User
 from functools import wraps
 import uuid, traceback, pytz
 
 
-app = Flask(__name__)
+from .ioc_config import app, context
+from .daemons import update_event
 
-#TODO: Move these values to configuration.py file
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
-context = create_context('main.db')
-
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-celery.conf.update(app.config)
-from app.daemons import update_event
 
 event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stats_service
+
+
 TOKENS = {}
 
 

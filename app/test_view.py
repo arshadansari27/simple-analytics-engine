@@ -1,22 +1,24 @@
 import pytest
 from unittest.mock import MagicMock
-import app.ioc_config as ioc_config
 from collections import namedtuple
-
-# Monkey Patching
-ServiceTuple = namedtuple('ServiceTuple', ['event_service', 'auth_service', 'stat_service'])
-ioc_config.create_context = lambda u: ServiceTuple(MagicMock(), MagicMock(), MagicMock())
-
-
-import app.view as view
 from app.auth.models import User, Authorisation
-from app.core.models import Project, AnalyticalEvent
+from app.core.models import Project, AnalyticalEvent, EventStats
 from datetime import datetime
 import json
 
+import app.ioc_config as ioc_config
+ioc_config.context = MagicMock()
+ioc_config.app = ioc_config.create_app(dict(db_name='test_view'))
+ioc_config.celery = MagicMock()
+
+from app.ioc_config import app
+import app.view as view
+
+
+
 @pytest.fixture
 def client():
-    _client = view.app.test_client()
+    _client = app.test_client()
     auth_service = MagicMock()
     event_service = MagicMock()
     test_user1 = User(1, 'test', 'test', 'test')
@@ -114,7 +116,7 @@ def test_events(client):
 
 def test_add_event(client):
     token = client_authenticate(client)
-    response = client.post(f"/events/add?token={token}", json={
+    response = client.post(f"/event/add?token={token}", json={
                     'project_id': 1, 
                     'uri': '/test', 
                     'event_type': 'test-event', 
