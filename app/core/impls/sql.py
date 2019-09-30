@@ -158,36 +158,3 @@ class AnalyticalEventMysqlRepository(AnalyticalEventRepository):
                 uri=event_object.uri, 
                 description=event_object.description, 
                 project_id=event_object.project_id)
-
-
-class EventStatsMysqlRepository(EventStatsRepository):
-
-    PERIODS = {'hourly', 'daily', 'weekly', 'monthly', 'yearly'}
-
-    def __init__(self, project_repository: ProjectRepository, event_repository: AnalyticalEventRepository):
-        self.project_repository = project_repository
-        self.event_repository = event_repository
-
-    def get_all_stats(self, user_id, period, timestamp_from, timestamp_to):
-        projects = self.project_repository.get_all(user_id)
-        events = []
-        for project in projects:
-            _events = self.event_repository.get_all_for_project(project.id, timestamp_from, timestamp_to)
-            if not _events:
-                continue
-            events.extend(_events)
-        return self._convert_to_stats(events, period)
-
-    def get_project_stats(self, project_id, period, timestamp_from, timestamp_to):
-        events = self.event_repository.get_all_for_project(project_id, timestamp_from, timestamp_to)
-        return self._convert_to_stats(events, period)
-
-
-    def _check_period(self, period):
-        if period not in EventStatsMysqlRepository.PERIODS:
-            raise Exception(
-                f"Invalid period = {period}, allowed = {EventStatsMysqlRepository.PERIODS}"
-            )
-
-    def _convert_to_stats(self, events, period):
-        return divide_data_in_intervals(events, period)

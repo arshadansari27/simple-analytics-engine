@@ -17,10 +17,10 @@ def context():
         pass
     metadata = MetaData()
     engine = create_engine(f"sqlite:///event_test.db")
-    EventRepositoryTuple = namedtuple("EventRepositoryTuple", ['event_repository', 'project_repository', 'event_stats_repository'])
+    EventRepositoryTuple = namedtuple("EventRepositoryTuple", ['event_repository', 'project_repository'])
     ae = AnalyticalEventMysqlRepository(metadata, engine)
     pr = ProjectMysqlRepository(metadata, engine)
-    ctx = EventRepositoryTuple(ae, pr, EventStatsMysqlRepository(pr, ae))
+    ctx = EventRepositoryTuple(ae, pr)
     metadata.create_all(engine)
     return ctx
 
@@ -63,10 +63,5 @@ def test_sql(context):
     assert event.event_type == 'event_type_2' and event.project_id == 3
     events = event_repository.get_all_for_project(3, None, None)
     assert len([u for u in events]) == 2
-
-    stats = stats_repository.get_all_stats(5, 'daily', datetime(2019, 1, 1, tzinfo=pytz.UTC), datetime(2019, 2, 1, tzinfo=pytz.UTC))
-    for _, stat in stats.items():
-        assert sum(stat['project'].values()) == stat['total']
-        assert sum(stat['uri'].values()) == stat['total']
 
     os.remove('event_test.db')

@@ -3,8 +3,8 @@ import copy
 from datetime import datetime, timedelta
 
 from .services import EventService
-from .models import AnalyticalEvent, Project
-from .repositories import AnalyticalEventRepository, ProjectRepository
+from .models import AnalyticalEvent, Project, EventStats
+from .repositories import AnalyticalEventRepository, ProjectRepository, EventStatsRepository
 from datetime import datetime
 import pytz
 
@@ -63,7 +63,26 @@ class InMemoryProjectRepository(ProjectRepository):
             project.id = self.generate_id()
         self.projects.append(project)
         return project.id
- 
+
+class InMemoryEventStatsRepository(EventStatsRepository):
+
+    def __init__(self, stats):
+        self.stats = stats
+
+    def upsert_event_stat(self, event_stat):
+        existing_event_stat = next((u for u in self.stats if u.user_id == event_stat.user_id and u.period == event_stat.period and u.interval == event_stat.interval and u.project_id == event_stat.project_id))
+        if not existing_event_stat:
+            self.stats.append(event_stat)
+        else:
+            existing_event_stat.count_total = event_stat.count_total
+            existing_event_stat.count_event_types = event_stat.count_event_types
+            existing_event_stat.count_uris = event_stat.count_uris
+
+    def get_all_stats(self, user_id, period, interval):
+        return [u for u in self.stats if u.user_id == user_id and u.period == period and u.interval == interval]
+
+    def get_project_stats(self, project_id, period, interval):
+        return next((u for u in self.stats if u.period == period and u.interval == interval and u.project_id == project_id))
 
 
 @pytest.fixture()
@@ -113,7 +132,6 @@ def test_get_events(context_core):
 def test_get_projects(context_core):
     event_service = context_core['event_service']
     assert len(event_service.get_all_projects(1)) == 2
-
 
 
 ANALYTICAL_EVENTS = [

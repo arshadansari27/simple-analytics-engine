@@ -57,3 +57,31 @@ class Project:
         return {'user_id': self.user_id, 'id': self.id, 'name': self.name, 'description': self.description}
 
 
+class EventStats:
+
+    PERIODS = {'hourly', 'daily', 'weekly', 'monthly', 'yearly'}
+
+    def __init__(self, user_id, period, interval, project_id,
+                    count_total,
+                    count_event_types,
+                    count_uris):
+        assert period in self.PERIODS
+        self.user_id = user_id
+        self.period = period
+        self.interval = interval
+        self.project_id = project_id
+        self.count_event_types = count_event_types
+        self.count_uris = count_uris
+        self.count_total = count_total
+
+    def to_json(self):
+        return {
+            'user_id': self.user_id, 
+            'period': self.period, 
+            'interval': self.interval, 
+            'count_total': self.count_total, 
+            'project_id': self.project_id, 
+            'count_event_types': self.count_event_types, 
+            'count_uris': self.count_uris, 
+        }
+

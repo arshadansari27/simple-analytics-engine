@@ -1,16 +1,14 @@
 from .repositories import AnalyticalEventRepository, ProjectRepository, EventStatsRepository
-from .models import AnalyticalEvent, Project
+from .models import AnalyticalEvent, Project, EventStats
 
 
 class EventService:
 
     def __init__(self, user_getter, 
             project_repository: ProjectRepository, 
-            event_repository: AnalyticalEventRepository,
-            stats_repository: EventStatsRepository):
+            event_repository: AnalyticalEventRepository):
         self.project_repository = project_repository
         self.event_repository = event_repository
-        self.stats_repository = stats_repository
         self.user_getter = user_getter
 
     def get_all_projects(self, user_id):
@@ -73,14 +71,24 @@ class EventService:
             raise EventNotFound(f"Event {event_id} not found")
         return event
 
-    def get_project_stats(self, period, user_id, project_id, timestamp_from, timestamp_to):
+
+class StatService:
+
+    def __init__(self, user_getter, project_repository: ProjectRepository, stats_repository: EventStatsRepository):
+        self.user_getter = user_getter
+        self.stats_service = stats_repository
+        self.project_repository = project_repository
+
+    def add_event_stat(self, user_id, project_id, event):
         user = self.user_getter(user_id)
-        # TODO: Check user roles to see if user can update project
         project = self.project_repository.get_by_id(project_id)
-        if not project:
-            raise ProjectNotFound(f"Project {project_id} not found")
-        print("Stats arg", user_id, period, timestamp_from, timestamp_to)
-        return self.stats_repository.get_project_stats(project.id, period, timestamp_from, timestamp_to), project
+        for period in EventStats.PERIODS:
+            interval = generate_interval(period, event.timestamp)
+
+    def get_project_stats(self, period, user_id, project_id, timestamp_from, timestamp_to):
+        intervals = generate_interval_range(period, timestamp_from, timestamp_to)
+        project = self.project_repository.get_by_id(project_id)
+        return self.stats_repository.get_project_stats(project_id, period, timestamp_from, timestamp_to), project
 
 
 class EventNotFound(Exception):

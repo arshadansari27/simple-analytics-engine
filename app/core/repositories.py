@@ -64,6 +64,10 @@ class EventStatsRepository(metaclass=abc.ABCMeta):
     """ Analytical Event Repository Interface """
 
     @abc.abstractmethod
+    def upsert_event_stat(self, event_stat):
+        pass
+
+    @abc.abstractmethod
     def get_all_stats(self, user_id, period, timestamp_from, timestamp_to):
         """
         Get all stats: period = hourly, daily, weekly, monthly, yearly
