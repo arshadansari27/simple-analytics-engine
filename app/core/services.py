@@ -86,24 +86,20 @@ class StatService:
         project = self.project_repository.get_by_id(project_id)
         for period in EventStats.PERIODS:
             interval = generate_interval(period, event.timestamp)
-            event_stat = self.stats_repository.get_project_stats(project.id, period, interval)
-            if not event_stat:
+            event_stats = self.stats_repository.get_project_stats(project.id, period, event.timestamp, event.timestamp)
+            if not event_stats:
                 event_stat = EventStats(user.id, period, interval, project.id, 0, {}, {})
+            else:
+                assert len(event_stats) is 1
+                event_stat = event_stats[0]
             event_stat.count_total += 1
             event_stat.count_event_types[event.event_type] += 1
             event_stat.count_uris[event.uri] += 1
             self.stats_repository.upsert_event_stat(event_stat)
 
     def get_project_stats(self, period, user_id, project_id, timestamp_from, timestamp_to):
-        intervals = generate_interval_range(period, timestamp_from, timestamp_to)
         project = self.project_repository.get_by_id(project_id)
-        stats = []
-        for interval in intervals:
-            stat = self.stats_repository.get_project_stats(project_id, period, interval)
-            if not stat:
-                continue
-            stats.append(stat)
-        return stats, project
+        return  self.stats_repository.get_project_stats(project_id, period, timestamp_from, timestamp_to), project
 
 
 class EventNotFound(Exception):

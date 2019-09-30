@@ -34,11 +34,12 @@ def generate_interval_range(period, timestamp_from, timestamp_to):
     if period == 'weekly':
         diff = timedelta(days=7)
     if period == 'monthly':
-        diff = timedelta(days=30)
+        diff = timedelta(days=31)
     if period == 'yearly':
         diff = timedelta(days=365)
     timestamp = timestamp_from
     while timestamp < timestamp_to:
-        timestamps.append(generate_interval(period, timestamp))
+        it = generate_interval(period, timestamp)
+        timestamps.append(it)
         timestamp += diff
     return timestamps

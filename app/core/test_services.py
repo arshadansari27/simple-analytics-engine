@@ -1,11 +1,12 @@
 import pytest
 import copy
 from datetime import datetime, timedelta
+from itertools import chain
 
 from .services import EventService, StatService
 from .models import AnalyticalEvent, Project, EventStats
 from .repositories import AnalyticalEventRepository, ProjectRepository, EventStatsRepository
-from .helper import generate_interval
+from .helper import generate_interval, generate_interval_range
 from datetime import datetime
 import pytz
 
@@ -68,26 +69,39 @@ class InMemoryProjectRepository(ProjectRepository):
 class InMemoryEventStatsRepository(EventStatsRepository):
 
     def __init__(self, stats):
-        self.stats = stats
+        self.stats = {self._key(s): s for s in stats}
+
+    def _key(self, stat):
+        it = int(stat.interval.timestamp())
+        return f"{stat.period}-{it}-{stat.project_id}"
+    
+    def _key_ids(self, project_id, period, interval):
+        it = int(interval.timestamp())
+        return f"{period}-{it}-{project_id}"
 
     def upsert_event_stat(self, event_stat):
-        existing_event_stat = self.get_project_stats(event_stat.project_id, event_stat.period, event_stat.interval)
+        existing_event_stat = self.stats.get(self._key(event_stat))
         if not existing_event_stat:
-            self.stats.append(event_stat)
+            self.stats[self._key(event_stat)] = event_stat
         else:
-            self.stats.append(event_stat)
             existing_event_stat.count_total = event_stat.count_total
             existing_event_stat.count_event_types = event_stat.count_event_types
             existing_event_stat.count_uris = event_stat.count_uris
 
-    def get_all_stats(self, user_id, period, interval):
-        return [u for u in self.stats if u.user_id == user_id and u.period == period and u.interval == interval]
-
-    def get_project_stats(self, project_id, period, interval):
-        try:
-            return next((u for u in self.stats if u.period == period and u.interval == interval and u.project_id == project_id))
-        except StopIteration:
-            return None
+    def get_project_stats(self, project_id, period, timestamp_from, timestamp_to):
+        if timestamp_from == timestamp_to:
+            interval = generate_interval(period, timestamp_from)
+            stats = [self.stats.get(self._key_ids(project_id, period, interval))]
+        else:
+            intervals = generate_interval_range(period, timestamp_from, timestamp_to)
+            stats = []
+            for interval in intervals:
+                stat = self.stats.get(self._key_ids(project_id, period, interval))
+                if not stat:
+                    continue
+                stats.append(stat)
+        return [s for s in stats if s]
+        
 
 @pytest.fixture()
 def context_core():

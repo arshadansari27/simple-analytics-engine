@@ -68,12 +68,6 @@ class EventStatsRepository(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_all_stats(self, user_id, period, timestamp_from, timestamp_to):
-        """
-        Get all stats: period = hourly, daily, weekly, monthly, yearly
-        """
-
-    @abc.abstractmethod
     def get_project_stats(self, project_id, period, timestamp_from, timestamp_to):
         """ 
         Get project stats: period = hourly, daily, weekly, monthly, yearly
