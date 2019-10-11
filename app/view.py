@@ -9,8 +9,6 @@ import uuid, traceback, pytz
 
 
 from .ioc_config import app, context
-from .daemons import update_event
-
 
 event_service, auth_service, stat_service = context.event_service, context.auth_service, context.stats_service
 
@@ -133,7 +131,6 @@ def events(project_id):
 @app.route('/event/add', methods=['POST'])
 @login_required
 def add_event():
-    from .daemons import update_event
     global TOKENS
     token = request.args['token']
     user_id = TOKENS[token]
@@ -143,19 +140,19 @@ def add_event():
     description = request.json['description']
     timestamp = parser.parse(request.json['timestamp'])
     event_id = event_service.add_event(user_id, project_id, timestamp, event_type, uri, description)
-    update_event.delay(user_id, project_id, event_id)
     return {'message': "successfully added event", 'event_id': event_id}
 
 
 @app.route('/event/send', methods=['POST'])
 #@login_required
 def send_event():
+    from .app_events import poke
     global TOKENS
     token = request.args['token']
     user_id = 1 or TOKENS[token]
     project_id = request.json['project_id']
     event_id = request.json['event_id']
-    update_event.delay(user_id, project_id, event_id)
+    poke('EVENT_ARRIVAL', user_id, project_id, event_id)
     return {'message': "successfully send event for updates", 'event_id': event_id}
 
 

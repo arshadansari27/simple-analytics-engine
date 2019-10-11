@@ -6,10 +6,14 @@ from app.core.models import Project, AnalyticalEvent, EventStats
 from datetime import datetime
 import json
 
+
+#TODO: This is a bad hack due to module level variables. 
 import app.ioc_config as ioc_config
 ioc_config.context = MagicMock()
 ioc_config.app = ioc_config.create_app(dict(db_name='test_view'))
 ioc_config.celery = MagicMock()
+import app.daemons as daemons
+daemons.update_event = MagicMock()
 
 from app.ioc_config import app
 import app.view as view

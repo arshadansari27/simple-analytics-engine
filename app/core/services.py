@@ -1,13 +1,16 @@
 from .repositories import AnalyticalEventRepository, ProjectRepository, EventStatsRepository
 from .models import AnalyticalEvent, Project, EventStats
 from .helper import generate_interval, generate_interval_range
+from ..app_events import poke
+import pytz
 
 
 class EventService:
 
     def __init__(self, user_getter, 
             project_repository: ProjectRepository, 
-            event_repository: AnalyticalEventRepository):
+            event_repository: AnalyticalEventRepository,
+        ):
         self.project_repository = project_repository
         self.event_repository = event_repository
         self.user_getter = user_getter
@@ -64,7 +67,7 @@ class EventService:
         event_id = self.event_repository.generate_id()
         event = AnalyticalEvent(event_id, timestamp, event_type, uri, description, project.id) 
         self.event_repository.add(event)
-        print(event.to_json())
+        poke('EVENT_ARRIVAL', user.id, project.id, event.id)
         return event.id
 
     def get_event(self, event_id):
@@ -85,16 +88,25 @@ class StatService:
         user = self.user_getter(user_id)
         project = self.project_repository.get_by_id(project_id)
         for period in EventStats.PERIODS:
-            interval = generate_interval(period, event.timestamp)
-            event_stats = self.stats_repository.get_project_stats(project.id, period, event.timestamp, event.timestamp)
+            interval = generate_interval(period, event.timestamp.replace(tzinfo=pytz.UTC))
+            event_stats = list(self.stats_repository.get_project_stats(project.id, period, interval, interval))
             if not event_stats:
+                print("Creating new event stats")
                 event_stat = EventStats(user.id, period, interval, project.id, 0, {}, {})
             else:
+                print("Found existing event stats")
                 assert len(event_stats) is 1
                 event_stat = event_stats[0]
+            print(event_stat.to_json())
             event_stat.count_total += 1
-            event_stat.count_event_types[event.event_type] += 1
-            event_stat.count_uris[event.uri] += 1
+            if event.event_type in event_stat.count_event_types:
+                event_stat.count_event_types[event.event_type] += 1
+            else:
+                event_stat.count_event_types[event.event_type] = 1
+            if event.uri in event_stat.count_uris:
+                event_stat.count_uris[event.uri] += 1
+            else:
+                event_stat.count_uris[event.uri] = 1
             self.stats_repository.upsert_event_stat(event_stat)
 
     def get_project_stats(self, period, user_id, project_id, timestamp_from, timestamp_to):

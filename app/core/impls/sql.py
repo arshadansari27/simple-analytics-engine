@@ -7,8 +7,7 @@ from sqlalchemy import (Boolean, Column, DateTime, ForeignKey, Integer, String,
 
 import dateutil
 from ..models import AnalyticalEvent, Project
-from ..repositories import (AnalyticalEventRepository, EventStatsRepository,
-                            ProjectRepository)
+from ..repositories import (AnalyticalEventRepository, ProjectRepository)
 
 
 @contextmanager
